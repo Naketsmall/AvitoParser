@@ -1,0 +1,9 @@
+{
+  "content": "Нашел новое предложение:",
+  "embeds": [{
+    "title": "$title",
+    "color": 123,
+    "description": "$description",
+    "url": "$url",
+    "image": {"url": "$imUrl"}}]
+}
