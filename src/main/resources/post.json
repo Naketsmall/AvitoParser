@@ -1,9 +1,9 @@
 {
   "content": "Нашел новое предложение:",
   "embeds": [{
-    "title": "$title",
-    "color": 123,
-    "description": "$description",
-    "url": "$url",
-    "image": {"url": "$imUrl"}}]
+    "title": "Склад, 2300 м² в Долгопрудном",
+    "color": 10828031,
+    "description": "Напрямую От Собственника. Продажа. Предлагаем рассмотреть под выкуп два складских комплекса класса В общей площадью 2300 квадратных метров с арендаторами. Комплекс расположен в шаговой доступности (3-5 мин) от ж/д станции Долгопрудная в 5 км от Мкад по ",
+    "url": "https://m.avito.ru/dolgoprudnyy/kommercheskaya_nedvizhimost/sklad_2300_m_1969954934",
+    "image": {"url": "https://52.img.avito.st/image/1/1.DReW-7a-of7YURv7gNMyc2xYp_g2WqP0KKCqRCdYo_4i-KI.Dy_2ceLvGBtigQWQZJpzlpg4uTXntHlH47BnuZw3ePg"}}]
 }

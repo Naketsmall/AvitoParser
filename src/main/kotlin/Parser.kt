@@ -1,100 +1,113 @@
 import org.jsoup.Connection
+import org.jsoup.HttpStatusException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.awt.Color
+import org.jsoup.nodes.Element
 import java.nio.charset.StandardCharsets
 
 class Parser(private var link: String, private var hook: String) {
     private var wall: Document
     private var running: Boolean = false
     private var checked: ArrayDeque<String> = ArrayDeque(listOf("", "", "", "", "", "", "", "", "", ""))
+    private val SLEEP_CONST: Long = 20000
 
     init {
-        wall = Jsoup.connect(link).get()
+        wall = Jsoup.connect(link).userAgent("Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36").get()
         fillChecked()
+        println("initialized")
+    }
+
+    private fun fillChecked(){
+        val cur = wall.getElementsByClass("items-items-kAJAg")[0].children()
+        for (el in 0 until checked.size){
+            if ("ads" !in cur[el].className() && "witcher" !in cur[el].className()){
+                checked.addLast(cur[el].child(1).child(0).child(0).attr("href"))
+                checked.removeFirst()
+                println(cur[el].child(1).child(0).child(0).attr("href"))
+            }
+        }
+        Thread.sleep(SLEEP_CONST)
     }
 
     fun start() {
         running = true
-        sendMessage("/moskva/kommercheskaya_nedvizhimost/svobodnogo_naznacheniya_42.5_m_2331269806")
-        /*while (running) {
-
-            wall = Jsoup.connect(link).get()
+        while (running) {
+            try {
+                wall = Jsoup.connect(link)
+                    .userAgent("Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
+                    .get()
+            } catch (e: HttpStatusException) {
+                e.printStackTrace()
+                continue
+            }
             val cur = wall.getElementsByClass("items-items-kAJAg")[0].children()
             for (el in 0 until checked.size){
                 if ("ads" !in cur[el].className() && "witcher" !in cur[el].className()){
                     val path: String = cur[el].child(1).child(0).child(0).attr("href")
                     if (path !in checked) {
                         println("\n"+path)
-                        sendMessage(path)
+                        sendMessage(cur[el])
                         checked.removeLast()
                         checked.addFirst(path)
                     }
                 }
             }
-            Thread.sleep(20000)
+            Thread.sleep(SLEEP_CONST)
             print(".")
         }
-*/
+
     }
 
-    private fun fillChecked(){
-        val cur = wall.getElementsByClass("items-items-kAJAg")[0].children()
-        for (el in 0 until checked.size - 5){
-            if ("ads" !in cur[el].className() && "witcher" !in cur[el].className()){
-                checked.addLast(cur[el].child(1).child(0).child(0).attr("href"))
-                checked.removeFirst()
-                println(cur[el].child(1).child(0).child(0).attr("href"))
-                sendMessage(cur[el].child(1).child(0).child(0).attr("href"))
-                break
-            }
-        }
-    }
+    private fun sendMessage(el: Element) {
+        val title = try {el.child(1).child(1).child(1).child(0).attr("title") }
+        catch (e: java.lang.IndexOutOfBoundsException) {""}
 
-    private fun sendMessage(path: String) {
-        val itemPage = Jsoup.connect("https://m.avito.ru$path").get()
+        val url = try {"https://m.avito.ru${el.child(1).child(0).child(0).attr("href")}"}
+        catch (e: java.lang.IndexOutOfBoundsException) {""}
 
-        var descr = try {
-            println("1st block: " + itemPage.body().getElementsByClass("style-item-description-text-SzN56").size)
-            itemPage.body().getElementsByClass("style-item-description-text-SzN56")[0].text()
-        } catch (e: java.lang.IndexOutOfBoundsException) {
-            try {
-                println("2nd block: " + itemPage.body().getElementsByClass("style-item-description-1e2Yo").size)
-                itemPage.body().getElementsByClass("style-item-description-1e2Yo")[0].text()
-            } catch (e: java.lang.IndexOutOfBoundsException) {
-                itemPage.body().getElementsByClass("style-item-description-html-1_RNo")[0].text()
-            }
-        }
+        val price = try {el.child(1).child(1).child(2).child(0).child(0).child(3).text()}
+        catch (e: java.lang.IndexOutOfBoundsException) {""}
+
+        var descr = try {el.child(0).attr("content").toString().replace(""""""", "").replace("\n", " ")}
+        catch (e: java.lang.IndexOutOfBoundsException) {""}
+
 
         if (descr.length > 800)
-            descr = descr.substring(800) + "..."
+            descr = descr.substring(0, 800) + "..."
+        val imUrl = try {el.child(1).child(0).child(0).child(0).child(0).child(0)
+            .child(0).child(0).child(0).attr("srcset").split(',').last().split(' ').first()}
+            catch (e: java.lang.IndexOutOfBoundsException) {""}
 
-        descr = descr.replace(""""""", "")
-        val title = itemPage.body().getElementsByClass("title-info-title-text")[0].text()
 
-//        Jsoup.connect(hook).data("content", "https://m.avito.ru$path\nОписание:\n$descr").post()
-        val req = Message(title, descr, "https://m.avito.ru$path", "").build()
+
+        val req = Message(title, price, descr, url, imUrl).build()
         println(req)
-        println(Jsoup.connect(hook).header("Content-Type", "application/json").requestBody(req).method(Connection.Method.POST).execute().statusCode())
-        //Jsoup.connect(hook)
+        try {
+            println(
+                Jsoup.connect(hook).header("Content-Type", "application/json").requestBody(req)
+                    .method(Connection.Method.POST).execute().statusCode()
+            )
+        } catch (e: HttpStatusException) {
+            e.printStackTrace()
+        }
 
     }
 
     private class Message(
         var title: String,
+        var price: String,
         var description: String,
         var url: String,
         var imUrl: String,
-        var color: Int = 9694793
+        var color: Int = 10828031
     ) {
-
 
         fun build(): String {
             return String("""
                 {
                     "content": "Нашел новое предложение:",
                     "embeds": [{
-                            "title": "$title",
+                            "title": "$title \nЦена: $price",
                             "color": $color,
                             "description": "$description",
                             "url": "$url",
